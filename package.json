@@ -6,7 +6,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "lint": "./node_modules/.bin/eslint .",
-    "fixlint": "./node_modules/.bin/eslint . --fix"
+    "fixlint": "./node_modules/.bin/eslint . --fix",
+    "lift": "node server/server.js"
   },
   "pre-commit": [
     "lint"
