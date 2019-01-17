@@ -26,4 +26,20 @@ const blueprint = new Schema({
   },
 });
 
+function getNum() {
+  return new Promise((resolve, reject) => {
+    this.find({}, { number: 1 }).sort({ number: -1 }).limit(1).exec((err, data) => {
+      if (err) {
+        return reject(err);
+      }
+      if (data.length === 0) {
+        return resolve(0);
+      }
+      return resolve(data[0].number);
+    });
+  });
+}
+
+blueprint.statics.getNum = getNum;
+
 module.exports = mongoose.model('question', blueprint);
