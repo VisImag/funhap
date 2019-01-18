@@ -61,4 +61,25 @@ router.post('/add', async (req, res) => {
   }
 });
 
+router.get('/fetch', async (req, res) => {
+  const page = req.body.page || 1;
+  const limit = req.body.limit || 10;
+  try {
+    const questions = await Question.find({}, { _id: 0, __v: 0 })
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .exec();
+    return res.status(200).json({
+      error: false,
+      content: { questions, page, limit },
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({
+      error: true,
+      content: 'Error fetching questions',
+    });
+  }
+});
+
 module.exports = router;
