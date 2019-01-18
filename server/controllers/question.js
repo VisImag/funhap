@@ -82,4 +82,27 @@ router.get('/fetch', async (req, res) => {
   }
 });
 
+router.get('/fetch/:queNum', async (req, res) => {
+  try {
+    const question = await Question.findOne({ number: req.params.queNum },
+      { _id: 0, __v: 0 });
+    if (question === null || question === undefined) {
+      return res.status(404).json({
+        error: true,
+        content: `Question number ${req.params.queNum} does not exist`,
+      });
+    }
+    return res.status(200).json({
+      error: false,
+      content: question,
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({
+      error: true,
+      content: `Error fetching question number ${req.params.queNum}`,
+    });
+  }
+});
+
 module.exports = router;
