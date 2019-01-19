@@ -105,4 +105,40 @@ router.get('/fetch/:queNum', async (req, res) => {
   }
 });
 
+router.put('/update/:queNum', async (req, res) => {
+  try {
+    const updateObj = {
+      statement: req.body.statement,
+      type: req.body.type,
+      options: req.body.options,
+      correct_options: req.body.correct_options,
+    };
+    Object.keys(updateObj).forEach(key => ((updateObj[key] === undefined)
+      ? delete updateObj[key] : ''));
+    if (Object.keys(updateObj).length === 0) {
+      return res.status(409).json({
+        error: true,
+        content: 'Nothing to update',
+      });
+    }
+    const result = await Question.updateOne({ number: req.params.queNum },
+      { $set: updateObj }).exec();
+    if (result.n === 0) {
+      return res.status(404).json({
+        error: true,
+        content: `Question number ${req.params.queNum} does not exist`,
+      });
+    }
+    return res.status(200).json({
+      error: false,
+      content: `Question number ${req.params.queNum} updates`,
+    });
+  } catch (err) {
+    return res.status(500).json({
+      error: true,
+      content: `Server was unable to handle question number ${req.params.queNum} update`,
+    });
+  }
+});
+
 module.exports = router;
