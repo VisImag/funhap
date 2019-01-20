@@ -4,6 +4,44 @@ const Question = require('../models/question');
 
 const router = express.Router();
 
+const questionObjectValidation = (obj, update = false) => {
+  if (!(update && obj.statement === undefined)
+    && (typeof obj.statement !== 'string' || obj.statement === '')) {
+    return {
+      error: true,
+      content: 'Question statement should be a non-empty string',
+    };
+  }
+  if (!(update && obj.type === undefined) && obj.type !== 'SINGLE_CORRECT' && obj.type !== 'MULTIPLE_CORRECT') {
+    return {
+      error: true,
+      content: 'Question type should either be `SINGLE_CORRECT` or `MULTI_CORRECT`',
+    };
+  }
+  if (!(update && obj.options === undefined)
+    && (!(obj.options instanceof Array) || obj.options.length === 0)) {
+    return {
+      error: true,
+      content: 'Question options should be a non-empty array',
+    };
+  }
+  if (!(update && obj.correct_options === undefined)
+    && (!(obj.correct_options instanceof Array) || obj.correct_options.length === 0)) {
+    return {
+      error: true,
+      content: 'Question correct options should be a non-empty array',
+    };
+  }
+  if (obj.options !== undefined && obj.correct_options !== undefined
+    && obj.options.length < obj.correct_options.length) {
+    return {
+      error: true,
+      content: 'Question options should be equal or more than correct options',
+    };
+  }
+  return false;
+};
+
 router.post('/add', async (req, res) => {
   let num;
   try {
@@ -22,35 +60,9 @@ router.post('/add', async (req, res) => {
     options: req.body.options,
     correct_options: req.body.correct_options,
   };
-  if (typeof queObj.statement !== 'string' || queObj.statement === '') {
-    return res.status(422).json({
-      error: true,
-      content: 'Question statement should be a non-empty string',
-    });
-  }
-  if (queObj.type !== 'SINGLE_CORRECT' && queObj.type !== 'MULTI_CORRECT') {
-    return res.status(422).json({
-      error: true,
-      content: 'Question type should either be `SINGLE_CORRECT` or `MULTI_CORRECT`',
-    });
-  }
-  if (!(queObj.options instanceof Array) || queObj.options.length === 0) {
-    return res.status(422).json({
-      error: true,
-      content: 'Question options should be a non-empty array',
-    });
-  }
-  if (!(queObj.correct_options instanceof Array) || queObj.correct_options.length === 0) {
-    return res.status(422).json({
-      error: true,
-      content: 'Question correct options shoule be a non-empty array',
-    });
-  }
-  if (queObj.options.length < queObj.correct_options.length) {
-    return res.status(422).json({
-      error: true,
-      content: 'Options should equal or more than correct options',
-    });
+  const validResult = questionObjectValidation(queObj);
+  if (validResult) {
+    return res.status(422).json(validResult);
   }
   try {
     const que = await Question.create(queObj);
@@ -127,6 +139,10 @@ router.put('/update/:queNum', async (req, res) => {
         content: 'Nothing to update',
       });
     }
+    const validResult = questionObjectValidation(updateObj, true);
+    if (validResult) {
+      return res.status(422).json(validResult);
+    }
     const result = await Question.updateOne({ number: req.params.queNum },
       { $set: updateObj }).exec();
     if (result.n === 0) {
@@ -137,7 +153,7 @@ router.put('/update/:queNum', async (req, res) => {
     }
     return res.status(200).json({
       error: false,
-      content: `Question number ${req.params.queNum} updates`,
+      content: `Question number ${req.params.queNum} updated`,
     });
   } catch (err) {
     return res.status(500).json({
