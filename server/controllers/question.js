@@ -46,6 +46,12 @@ router.post('/add', async (req, res) => {
       content: 'Question correct options shoule be a non-empty array',
     });
   }
+  if (queObj.options.length < queObj.correct_options.length) {
+    return res.status(422).json({
+      error: true,
+      content: 'Options should equal or more than correct options',
+    });
+  }
   try {
     const que = await Question.create(queObj);
     return res.status(201).json({
