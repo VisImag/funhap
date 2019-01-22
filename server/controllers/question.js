@@ -185,8 +185,10 @@ router.post('/add/batch', async (req, res) => {
     });
   }
   const readFile = promisify(fs.readFile);
+  const unlinkFile = promisify(fs.unlink);
   try {
     const data = await readFile(tmpFile.path, { encoding: 'utf8' });
+    await unlinkFile(tmpFile.path);
     const { questions } = JSON.parse(data);
     if (questions === undefined) {
       return res.status(400).json({
