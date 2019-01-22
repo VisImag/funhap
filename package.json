@@ -24,6 +24,7 @@
   "homepage": "https://github.com/VisImag/funhap#readme",
   "dependencies": {
     "body-parser": "^1.18.3",
+    "connect-multiparty": "^2.2.0",
     "express": "^4.16.4",
     "mongoose": "^5.4.4"
   },

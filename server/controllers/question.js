@@ -1,6 +1,11 @@
+const path = require('path');
+const fs = require('fs');
+const { promisify } = require('util');
+
 const express = require('express');
 
 const Question = require('../models/question');
+const { Queue } = require('../utils');
 
 const router = express.Router();
 
@@ -12,7 +17,8 @@ const questionObjectValidation = (obj, update = false) => {
       content: 'Question statement should be a non-empty string',
     };
   }
-  if (!(update && obj.type === undefined) && obj.type !== 'SINGLE_CORRECT' && obj.type !== 'MULTIPLE_CORRECT') {
+  if (!(update && obj.type === undefined) && obj.type.toUpperCase() !== 'SINGLE_CORRECT'
+    && obj.type.toUpperCase() !== 'MULTIPLE_CORRECT') {
     return {
       error: true,
       content: 'Question type should either be `SINGLE_CORRECT` or `MULTI_CORRECT`',
@@ -159,6 +165,70 @@ router.put('/update/:queNum', async (req, res) => {
     return res.status(500).json({
       error: true,
       content: `Server was unable to handle question number ${req.params.queNum} update`,
+    });
+  }
+});
+
+router.post('/add/batch', async (req, res) => {
+  const tmpFile = req.files.datafile;
+  if (tmpFile === undefined) {
+    return res.status(400).json({
+      error: true,
+      content: 'JSON datafile is absent',
+    });
+  }
+  const extName = path.extname(tmpFile.path);
+  if (extName !== '.json') {
+    return res.status(415).json({
+      error: true,
+      content: `Expected JSON file got ${extName.slice(1).toUpperCase()}`,
+    });
+  }
+  const readFile = promisify(fs.readFile);
+  try {
+    const data = await readFile(tmpFile.path, { encoding: 'utf8' });
+    const { questions } = JSON.parse(data);
+    if (questions === undefined) {
+      return res.status(400).json({
+        error: true,
+        content: 'JSON file does not contain questions array',
+      });
+    }
+    const statusObj = {};
+    const queue = new Queue(questions.length);
+    queue.on('completed', () => res.status(200).json({
+      error: false,
+      content: statusObj,
+    }));
+    for (let i = 0; i < questions.length; i += 1) {
+      queue.push(async () => {
+        try {
+          await Question.create(questions[i]);
+          statusObj[`Question ${questions[i].number}`] = {
+            error: false,
+            content: 'Added successfully',
+          };
+          queue.next();
+        } catch (err) {
+          statusObj[`Question ${questions[i].number}`] = {
+            error: true,
+            content: err.message,
+          };
+          queue.next();
+        }
+      });
+    }
+    return null;
+  } catch (err) {
+    if (err instanceof SyntaxError) {
+      return res.status(422).json({
+        error: true,
+        content: err.message,
+      });
+    }
+    return res.status(500).json({
+      error: true,
+      content: 'Unexpected error occured, Maybe there is an error reading uploaded file',
     });
   }
 });
