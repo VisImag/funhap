@@ -3,6 +3,10 @@ const mongoose = require('mongoose');
 const { Schema } = mongoose;
 
 const blueprint = new Schema({
+  name: {
+    type: mongoose.Schema.Types.String,
+    required: true,
+  },
   username: {
     type: mongoose.Schema.Types.String,
     required: true,
