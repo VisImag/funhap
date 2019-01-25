@@ -6,7 +6,8 @@ const mongoose = require('mongoose');
 const multipart = require('connect-multiparty');
 
 require('./env.js')();
-const QuestionController = require('./controllers/question.js');
+const QuestionController = require('./controllers/question');
+const UserController = require('./controllers/user');
 
 const app = express();
 
@@ -15,6 +16,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(multipart({ uploadDir: path.join(__dirname, './.tmp') }));
 
 app.use('/question', QuestionController);
+app.use('/user', UserController);
 
 mongoose.Promise = global.Promise;
 mongoose.connect(process.env.MONGO_URL, { useNewUrlParser: true }, (err) => {
